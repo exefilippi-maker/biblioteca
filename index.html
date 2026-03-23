@@ -276,6 +276,26 @@
   .wish-note { font-size: 12px; color: var(--text2); margin-top: 4px; font-style: italic; }
   .wish-actions { display: flex; gap: 8px; }
 
+  /* TOPICS */
+  .topics-input-wrap { position: relative; }
+  .topics-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .topic-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #fdf0e6; color: var(--accent); border: 1px solid #f0d5be;
+    border-radius: 20px; padding: 4px 10px; font-size: 12px;
+  }
+  .topic-tag .remove { cursor: pointer; font-size: 14px; line-height: 1; color: var(--accent2); }
+  .topic-tag .remove:hover { color: var(--accent); }
+  .topics-display { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .topic-pill {
+    background: #fdf0e6; color: var(--accent); border: 1px solid #f0d5be;
+    border-radius: 20px; padding: 3px 10px; font-size: 11px;
+  }
+  .topic-pill-card {
+    background: var(--surface2); color: var(--text2);
+    border-radius: 4px; padding: 2px 6px; font-size: 10px;
+  }
+
   /* EMPTY */
   .empty-state {
     text-align: center; padding: 80px 40px; color: var(--text2);
@@ -461,8 +481,16 @@
         <input type="text" class="form-input" id="f-emoji" placeholder="📖 (opcional, un emoji que represente el libro)">
       </div>
       <div class="form-group full">
+        <label class="form-label">Temas / Índice de contenido</label>
+        <div class="topics-input-wrap">
+          <input type="text" class="form-input" id="f-topic-input" placeholder="Ej: amor, liderazgo, historia... (Enter para agregar)">
+          <div class="topics-tags" id="f-topics-tags"></div>
+        </div>
+        <small style="color:var(--text2);font-size:11px;margin-top:4px">Agregá los temas principales que trata el libro. La IA los usará para encontrarlo.</small>
+      </div>
+      <div class="form-group full">
         <label class="form-label">Reseña / Notas personales</label>
-        <textarea class="form-textarea" id="f-review" placeholder="¿De qué trata el libro? ¿Qué temas aborda? ¿Qué te pareció? (Esto ayuda a la búsqueda con IA)"></textarea>
+        <textarea class="form-textarea" id="f-review" placeholder="¿De qué trata el libro? ¿Qué te pareció? ¿Qué aprendiste?"></textarea>
       </div>
       <div class="form-group full">
         <label class="form-label">¿Por qué lo querés leer? (solo lista de deseos)</label>
@@ -483,6 +511,37 @@
 </div>
 
 <script>
+// ============ TOPICS ============
+let currentTopics = [];
+function initTopicInput() {
+  currentTopics = [];
+  renderTopicTags();
+  const input = document.getElementById('f-topic-input');
+  if(!input) return;
+  input.onkeydown = function(e) {
+    if(e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = input.value.trim().replace(/,/g,'');
+      if(val && !currentTopics.includes(val)) {
+        currentTopics.push(val);
+        renderTopicTags();
+      }
+      input.value = '';
+    }
+  };
+}
+function renderTopicTags() {
+  const el = document.getElementById('f-topics-tags');
+  if(!el) return;
+  el.innerHTML = currentTopics.map((t,i) => `
+    <span class="topic-tag">${t}<span class="remove" onclick="removeTopic(${i})">×</span></span>
+  `).join('');
+}
+function removeTopic(i) {
+  currentTopics.splice(i,1);
+  renderTopicTags();
+}
+
 // ============ DATA ============
 let books = JSON.parse(localStorage.getItem('biblioteca_books') || '[]');
 let currentRating = 0;
@@ -513,6 +572,7 @@ function openAddForm(status, bookId) {
   overlay.classList.add('open');
   currentRating = 0;
   updateStars(0);
+  initTopicInput();
   if(bookId) {
     const b = books.find(x => x.id === bookId);
     document.getElementById('form-title-text').textContent = 'Editar libro';
@@ -524,6 +584,8 @@ function openAddForm(status, bookId) {
     document.getElementById('f-emoji').value = b.emoji || '';
     document.getElementById('f-review').value = b.review || '';
     document.getElementById('f-reason').value = b.reason || '';
+    currentTopics = b.topics ? [...b.topics] : [];
+    renderTopicTags();
     currentRating = b.rating || 0;
     updateStars(currentRating);
   } else {
@@ -559,6 +621,7 @@ function saveBook() {
     year: document.getElementById('f-year').value,
     status: document.getElementById('f-status').value,
     emoji: document.getElementById('f-emoji').value.trim() || randomEmoji(),
+    topics: [...currentTopics],
     review: document.getElementById('f-review').value,
     reason: document.getElementById('f-reason').value,
     rating: currentRating,
@@ -626,6 +689,7 @@ function renderBooks() {
       <div class="book-info">
         <div class="book-title-card">${b.title}</div>
         <div class="book-author-card">${b.author}</div>
+        ${b.topics && b.topics.length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px">${b.topics.slice(0,3).map(t=>`<span class="topic-pill-card">${t}</span>`).join('')}</div>` : ''}
         <div class="book-rating">${starsHTML(b.rating, 13)}</div>
       </div>
     </div>
@@ -658,6 +722,11 @@ function openDetail(id) {
         ${b.rating ? `<div class="detail-stars">${starsHTML(b.rating, 20)}</div>` : ''}
       </div>
     </div>
+    ${b.topics && b.topics.length ? `
+    <div class="detail-section">
+      <div class="detail-section-title">Temas / Índice</div>
+      <div class="topics-display">${b.topics.map(t=>`<span class="topic-pill">${t}</span>`).join('')}</div>
+    </div>` : ''}
     ${b.review ? `
     <div class="detail-section">
       <div class="detail-section-title">Reseña / Notas</div>
@@ -780,7 +849,7 @@ async function askAI() {
   }
 
   const bookList = books.map(b =>
-    `- "${b.title}" de ${b.author}${b.genre ? ` (${b.genre})` : ''}${b.review ? `: ${b.review}` : ''}${b.rating ? ` [${b.rating}/5 estrellas]` : ''}`
+    `- "${b.title}" de ${b.author}${b.genre ? ` (${b.genre})` : ''}${b.topics && b.topics.length ? ` | Temas: ${b.topics.join(', ')}` : ''}${b.review ? ` | Reseña: ${b.review}` : ''}${b.rating ? ` [${b.rating}/5 estrellas]` : ''}`
   ).join('\n');
 
   const prompt = `Sos un asistente bibliográfico experto. El usuario tiene esta biblioteca personal de libros:\n\n${bookList}\n\nPregunta del usuario: "${query}"\n\nResponde en español, de forma clara y útil. Si algún libro de la biblioteca es relevante para la pregunta, mencionalo específicamente. Si ninguno aplica, dilo y sugiere qué tipo de libro buscar.`;
@@ -825,11 +894,11 @@ updateSidebarCount();
 // Sample books if empty
 if(books.length === 0) {
   books = [
-    { id:'1', title:'El Alquimista', author:'Paulo Coelho', genre:'Ficción', year:'2022', status:'read', emoji:'🌟', review:'Un libro sobre seguir los sueños y escuchar el corazón. Trata sobre el viaje de Santiago, un pastor andaluz, en busca de un tesoro. Habla de la leyenda personal, el destino y la conexión con el universo.', rating:5, added: Date.now()-100000 },
-    { id:'2', title:'Orgullo y Prejuicio', author:'Jane Austen', genre:'Clásicos', year:'2023', status:'read', emoji:'💌', review:'Una novela sobre el amor, el matrimonio y las clases sociales en la Inglaterra del siglo XIX. Elizabeth Bennet y Mr. Darcy protagonizan un romance lleno de malentendidos y prejuicios.', rating:5, added: Date.now()-200000 },
-    { id:'3', title:'Hábitos Atómicos', author:'James Clear', genre:'Autoayuda', year:'2024', status:'read', emoji:'⚡', review:'Explica cómo los pequeños cambios de conducta generan resultados extraordinarios. Muy práctico, con técnicas concretas para crear hábitos positivos y eliminar los negativos.', rating:4, added: Date.now()-300000 },
-    { id:'4', title:'Cien Años de Soledad', author:'Gabriel García Márquez', genre:'Ficción', year:'', status:'reading', emoji:'🌿', review:'La saga de la familia Buendía en Macondo. Realismo mágico en su máxima expresión.', rating:0, added: Date.now()-50000 },
-    { id:'5', title:'La Sombra del Viento', author:'Carlos Ruiz Zafón', genre:'Misterio', year:'', status:'wishlist', emoji:'🌙', reason:'Lo recomendó mi mamá, dicen que es imposible dejarlo.', rating:0, added: Date.now() },
+    { id:'1', title:'El Alquimista', author:'Paulo Coelho', genre:'Ficción', year:'2022', status:'read', emoji:'🌟', topics:['sueños','destino','espiritualidad','viaje','propósito de vida'], review:'Un libro sobre seguir los sueños y escuchar el corazón. Trata sobre el viaje de Santiago, un pastor andaluz, en busca de un tesoro. Habla de la leyenda personal, el destino y la conexión con el universo.', rating:5, added: Date.now()-100000 },
+    { id:'2', title:'Orgullo y Prejuicio', author:'Jane Austen', genre:'Clásicos', year:'2023', status:'read', emoji:'💌', topics:['amor','matrimonio','clases sociales','prejuicio','romance'], review:'Una novela sobre el amor, el matrimonio y las clases sociales en la Inglaterra del siglo XIX. Elizabeth Bennet y Mr. Darcy protagonizan un romance lleno de malentendidos y prejuicios.', rating:5, added: Date.now()-200000 },
+    { id:'3', title:'Hábitos Atómicos', author:'James Clear', genre:'Autoayuda', year:'2024', status:'read', emoji:'⚡', topics:['hábitos','productividad','motivación','psicología','cambio de comportamiento'], review:'Explica cómo los pequeños cambios de conducta generan resultados extraordinarios. Muy práctico, con técnicas concretas para crear hábitos positivos y eliminar los negativos.', rating:4, added: Date.now()-300000 },
+    { id:'4', title:'Cien Años de Soledad', author:'Gabriel García Márquez', genre:'Ficción', year:'', status:'reading', emoji:'🌿', topics:['familia','soledad','realismo mágico','historia','latinoamérica'], review:'La saga de la familia Buendía en Macondo. Realismo mágico en su máxima expresión.', rating:0, added: Date.now()-50000 },
+    { id:'5', title:'La Sombra del Viento', author:'Carlos Ruiz Zafón', genre:'Misterio', year:'', status:'wishlist', emoji:'🌙', topics:['misterio','libros','barcelona','secretos'], reason:'Lo recomendó mi mamá, dicen que es imposible dejarlo.', rating:0, added: Date.now() },
   ];
   save();
   renderBooks();
