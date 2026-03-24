@@ -383,25 +383,24 @@
       <div class="wish-list" id="wish-list"></div>
     </div>
 
-    <!-- BUSCAR CON IA -->
+    <!-- BUSCAR POR TEMAS -->
     <div class="page" id="page-buscar">
       <div class="page-header">
-        <h2 class="page-title">Buscar <em>con IA</em></h2>
-        <p class="page-subtitle">Pregunta sobre el contenido de tus libros</p>
+        <h2 class="page-title">Buscar <em>por Temas</em></h2>
+        <p class="page-subtitle">Encontrá libros por tema o palabra clave</p>
       </div>
       <div class="ai-box">
-        <p style="font-size: 14px; color: var(--text2); margin-bottom: 16px;">
-          Hacé preguntas sobre el contenido de tus libros. Por ejemplo: <em>"¿Qué libro trata sobre el amor en la guerra?"</em>, <em>"¿Cuál habla de inteligencia emocional?"</em>, o <em>"¿Qué libro me ayuda con liderazgo?"</em>
+        <p style="font-size:14px;color:var(--text2);margin-bottom:16px">
+          Escribí un tema y te muestra todos los libros que lo tienen. Por ejemplo: <em>amor</em>, <em>productividad</em>, <em>historia</em>...
         </p>
         <div class="ai-prompt">
-          <input type="text" class="search-input" id="ai-query" placeholder="¿Sobre qué tema querés saber?" onkeydown="if(event.key==='Enter')askAI()">
-          <button class="btn btn-primary" onclick="askAI()">Preguntar</button>
+          <input type="text" class="search-input" id="topic-query" placeholder="Buscar tema..." oninput="searchByTopic()">
         </div>
-        <div class="ai-result" id="ai-result"></div>
       </div>
-      <p style="font-size: 13px; color: var(--text2);">💡 La IA analiza las reseñas y notas que escribiste sobre cada libro para encontrar la mejor respuesta.</p>
+      <div id="all-topics-cloud" style="margin-bottom:28px"></div>
+      <div id="topic-results"></div>
     </div>
-
+    
     <!-- ESTADÍSTICAS -->
     <div class="page" id="page-stats">
       <div class="page-header">
