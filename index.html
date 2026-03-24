@@ -335,7 +335,7 @@
         <span class="nav-icon">✨</span> Quiero Leer
       </div>
       <div class="nav-item" onclick="showPage('buscar')">
-        <span class="nav-icon">🔍</span> Buscar con IA
+        <span class="nav-icon">🔍</span> Buscar Temas
       </div>
       <div class="nav-item" onclick="showPage('stats')">
         <span class="nav-icon">📊</span> Estadísticas
@@ -560,6 +560,7 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => {
     if(n.textContent.toLowerCase().includes({biblioteca:'biblio',wishlist:'quiero',buscar:'buscar',stats:'estad'}[name] || name)) n.classList.add('active');
   });
+  if(name === 'buscar') renderTopicCloud();
   if(name === 'biblioteca') renderBooks();
   if(name === 'wishlist') renderWishlist();
   if(name === 'stats') renderStats();
@@ -835,41 +836,79 @@ function renderStats() {
   `).join('') : '<p style="color:var(--text2);font-size:14px">Puntúa tus libros para ver el ranking.</p>';
 }
 
-// ============ AI SEARCH ============
-async function askAI() {
-  const query = document.getElementById('ai-query').value.trim();
-  if(!query) return;
-  const resultEl = document.getElementById('ai-result');
-  resultEl.className = 'ai-result visible';
-  resultEl.innerHTML = '<span class="ai-thinking">🤔 Analizando tu biblioteca...</span>';
+// ============ TOPIC SEARCH ============
+function renderTopicCloud() {
+  const cloudEl = document.getElementById('all-topics-cloud');
+  if(!cloudEl) return;
+  const topicMap = {};
+  books.forEach(b => {
+    (b.topics || []).forEach(t => { topicMap[t] = (topicMap[t] || 0) + 1; });
+  });
+  const topics = Object.entries(topicMap).sort((a,b) => b[1]-a[1]);
+  if(topics.length === 0) {
+    cloudEl.innerHTML = '<p style="font-size:13px;color:var(--text2)">Sin temas todavia. Agrega temas a tus libros para poder buscarlos.</p>';
+    return;
+  }
+  let html = '<div style="margin-bottom:10px;font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em">Todos los temas</div><div style="display:flex;flex-wrap:wrap;gap:8px">';
+  topics.forEach(function(entry) {
+    const t = entry[0], c = entry[1];
+    html += '<span onclick="filterByTopicTag(\'' + t + '\')" style="cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:13px;color:var(--text2);transition:all 0.2s" onmouseover="this.style.background=\'var(--accent)\';this.style.color=\'white\'" onmouseout="this.style.background=\'var(--surface)\';this.style.color=\'var(--text2)\'">' + t + ' <span style="font-size:11px;opacity:0.6">' + c + '</span></span>';
+  });
+  html += '</div>';
+  cloudEl.innerHTML = html;
+  searchByTopic();
+}
 
-  if(books.length === 0) {
-    resultEl.innerHTML = '📚 Todavía no tenés libros en tu biblioteca. Agregá libros con reseñas para que la IA pueda ayudarte.';
+function filterByTopicTag(topic) {
+  const input = document.getElementById('topic-query');
+  if(input) { input.value = topic; searchByTopic(); }
+}
+
+function searchByTopic() {
+  const q = (document.getElementById('topic-query') ? document.getElementById('topic-query').value : '').toLowerCase().trim();
+  const resultsEl = document.getElementById('topic-results');
+  if(!resultsEl) return;
+  if(!q) { resultsEl.innerHTML = ''; return; }
+
+  const matched = books.filter(function(b) {
+    const topicsMatch = (b.topics || []).some(function(t){ return t.toLowerCase().includes(q); });
+    const reviewMatch = (b.review || '').toLowerCase().includes(q);
+    const titleMatch = b.title.toLowerCase().includes(q);
+    return topicsMatch || reviewMatch || titleMatch;
+  });
+
+  if(matched.length === 0) {
+    resultsEl.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128269;</div><div class="empty-text">Sin resultados para "' + q + '"</div><div class="empty-sub">Proba con otro tema o agrega mas temas a tus libros</div></div>';
     return;
   }
 
-  const bookList = books.map(b =>
-    `- "${b.title}" de ${b.author}${b.genre ? ` (${b.genre})` : ''}${b.topics && b.topics.length ? ` | Temas: ${b.topics.join(', ')}` : ''}${b.review ? ` | Reseña: ${b.review}` : ''}${b.rating ? ` [${b.rating}/5 estrellas]` : ''}`
-  ).join('\n');
+  const statusLabel = {read:'&#10003; Leido', wishlist:'&#10024; Quiero leer', reading:'&#128214; Leyendo'};
+  const statusColor = {read:'var(--read)', wishlist:'var(--wishlist)', reading:'var(--gold)'};
 
-  const prompt = `Sos un asistente bibliográfico experto. El usuario tiene esta biblioteca personal de libros:\n\n${bookList}\n\nPregunta del usuario: "${query}"\n\nResponde en español, de forma clara y útil. Si algún libro de la biblioteca es relevante para la pregunta, mencionalo específicamente. Si ninguno aplica, dilo y sugiere qué tipo de libro buscar.`;
+  let html = '<div style="font-size:13px;color:var(--text2);margin-bottom:16px">' + matched.length + ' libro' + (matched.length>1?'s':'') + ' encontrado' + (matched.length>1?'s':'') + ' para <strong style="color:var(--accent)">"' + q + '"</strong></div>';
+  html += '<div style="display:flex;flex-direction:column;gap:12px">';
 
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    const data = await response.json();
-    const text = data.content?.map(c => c.text || '').join('') || 'No pude obtener una respuesta.';
-    resultEl.innerHTML = '🤖 <strong>IA:</strong> ' + text.replace(/\n/g, '<br>');
-  } catch(e) {
-    resultEl.innerHTML = '❌ Hubo un error al conectar con la IA. Revisá la conexión.';
-  }
+  matched.forEach(function(b) {
+    const matchedTopics = (b.topics||[]).filter(function(t){ return t.toLowerCase().includes(q); });
+    let topicsHtml = '';
+    if(matchedTopics.length) {
+      topicsHtml = '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">';
+      matchedTopics.forEach(function(t){ topicsHtml += '<span style="background:#fdf0e6;color:var(--accent);border:1px solid #f0d5be;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:500">' + t + '</span>'; });
+      topicsHtml += '</div>';
+    }
+    const reviewSnippet = b.review ? '<div style="font-size:13px;color:var(--text2);line-height:1.5">' + b.review.substring(0,120) + (b.review.length>120?'...':'') + '</div>' : '';
+    const starsHtml = b.rating ? '<div style="font-size:13px;color:var(--gold);white-space:nowrap">' + '&#9733;'.repeat(b.rating) + '</div>' : '';
+    html += '<div onclick="openDetail(\'' + b.id + '\')" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px;cursor:pointer;transition:all 0.2s;display:flex;gap:16px;align-items:flex-start" onmouseover="this.style.borderColor=\'var(--accent2)\';this.style.boxShadow=\'var(--shadow)\'" onmouseout="this.style.borderColor=\'var(--border)\';this.style.boxShadow=\'none\'">';
+    html += '<span style="font-size:36px">' + (b.emoji||'&#128214;') + '</span>';
+    html += '<div style="flex:1">';
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-family:\'Cormorant Garamond\',serif;font-size:18px;font-weight:600">' + b.title + '</span><span style="font-size:11px;color:' + (statusColor[b.status]||'var(--text2)') + ';font-weight:500">' + (statusLabel[b.status]||'') + '</span></div>';
+    html += '<div style="font-size:13px;color:var(--text2);margin-bottom:8px">' + b.author + (b.genre?' &middot; '+b.genre:'') + '</div>';
+    html += topicsHtml + reviewSnippet;
+    html += '</div>' + starsHtml + '</div>';
+  });
+
+  html += '</div>';
+  resultsEl.innerHTML = html;
 }
 
 // ============ SIDEBAR COUNT ============
