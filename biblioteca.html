@@ -12,6 +12,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
     --bg: #f8f6f1;
@@ -311,6 +312,75 @@
   .empty-text { font-family: 'Cormorant Garamond', serif; font-size: 22px; margin-bottom: 8px; color: var(--text); }
   .empty-sub { font-size: 14px; margin-bottom: 24px; }
 
+  /* AUDIOLIBRO */
+  .audio-drop-zone {
+    border: 2px dashed var(--border); border-radius: 16px;
+    padding: 48px 32px; text-align: center; cursor: pointer;
+    transition: all 0.2s; background: var(--surface);
+  }
+  .audio-drop-zone:hover, .audio-drop-zone.drag-over {
+    border-color: var(--accent2); background: #fdf5ef;
+  }
+  .audio-drop-icon { font-size: 48px; margin-bottom: 12px; }
+  .audio-drop-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--text); margin-bottom: 6px; }
+  .audio-drop-sub { font-size: 13px; color: var(--text2); }
+  .audio-player {
+    background: var(--surface); border-radius: 20px; border: 1px solid var(--border);
+    padding: 32px; box-shadow: var(--shadow);
+  }
+  .audio-book-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600;
+    color: var(--accent); margin-bottom: 4px;
+  }
+  .audio-book-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+  .audio-text-display {
+    background: var(--bg); border-radius: 12px; border: 1px solid var(--border);
+    padding: 24px; min-height: 140px; max-height: 220px; overflow-y: auto;
+    font-size: 16px; line-height: 1.9; color: var(--text);
+    margin-bottom: 24px; font-family: 'Cormorant Garamond', serif;
+  }
+  .audio-text-display .highlight { background: #fde8cc; border-radius: 3px; padding: 0 2px; }
+  .audio-progress-wrap { margin-bottom: 20px; }
+  .audio-progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--text2); margin-bottom: 6px;
+  }
+  .audio-progress-bar {
+    width: 100%; height: 5px; background: var(--border); border-radius: 3px;
+    cursor: pointer; appearance: none; outline: none;
+  }
+  .audio-progress-bar::-webkit-slider-thumb {
+    appearance: none; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--accent); cursor: pointer;
+  }
+  .audio-controls {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .audio-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 18px; transition: all 0.2s;
+    background: var(--surface2); color: var(--text);
+  }
+  .audio-btn:hover { background: var(--border); }
+  .audio-btn-play {
+    width: 56px; height: 56px; background: var(--accent); color: white; font-size: 22px;
+  }
+  .audio-btn-play:hover { background: #7a5235; }
+  .audio-speed {
+    padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border);
+    font-size: 13px; font-family: inherit; background: var(--surface2);
+    color: var(--text); cursor: pointer; outline: none; margin-left: auto;
+  }
+  .audio-voice {
+    padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border);
+    font-size: 13px; font-family: inherit; background: var(--surface2);
+    color: var(--text); cursor: pointer; outline: none; max-width: 180px;
+  }
+  .audio-new-btn {
+    margin-top: 20px; display: flex; justify-content: flex-end;
+  }
+
   /* SCROLLBAR */
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -354,6 +424,9 @@
     .wish-actions { width: 100%; justify-content: flex-end; }
     .detail-header { flex-direction: column; gap: 16px; }
     .detail-cover { width: 80px; height: 110px; font-size: 42px; }
+    .audio-player { padding: 20px; }
+    .audio-controls { gap: 8px; }
+    .audio-voice { max-width: 120px; font-size: 12px; }
     .genre-chart, .top-books { padding: 20px; }
     .ai-box { padding: 20px; }
   }
@@ -377,6 +450,9 @@
       </div>
       <div class="nav-item" onclick="showPage('buscar')">
         <span class="nav-icon">🔍</span> Buscar Temas
+      </div>
+      <div class="nav-item" onclick="showPage('audiolibro')">
+        <span class="nav-icon">🎧</span> Audiolibro
       </div>
       <div class="nav-item" onclick="showPage('stats')">
         <span class="nav-icon">📊</span> Estadísticas
@@ -444,6 +520,71 @@
         <div class="ai-result" id="ai-result"></div>
       </div>
       <p style="font-size: 13px; color: var(--text2);">💡 La IA analiza las reseñas y notas que escribiste sobre cada libro para encontrar la mejor respuesta.</p>
+    </div>
+
+    <!-- AUDIOLIBRO -->
+    <div class="page" id="page-audiolibro">
+      <div class="page-header">
+        <h2 class="page-title">🎧 <em>Audiolibro</em></h2>
+        <p class="page-subtitle">Cargá un PDF y escuchalo en voz alta</p>
+      </div>
+
+      <!-- DROP ZONE -->
+      <div id="audio-drop-zone" class="audio-drop-zone"
+        onclick="document.getElementById('audio-file-input').click()"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleAudioDrop(event)">
+        <input type="file" id="audio-file-input" accept=".pdf" style="display:none" onchange="loadAudioPDF(this.files[0])">
+        <div class="audio-drop-icon">📄</div>
+        <div class="audio-drop-title">Subí un PDF para escucharlo</div>
+        <div class="audio-drop-sub">Hacé clic o arrastrá un archivo PDF acá</div>
+      </div>
+
+      <!-- LOADING -->
+      <div id="audio-loading" style="display:none;text-align:center;padding:40px;color:var(--text2)">
+        <div style="font-size:36px;margin-bottom:12px">⏳</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:18px">Extrayendo texto del PDF...</div>
+      </div>
+
+      <!-- PLAYER -->
+      <div id="audio-player-wrap" style="display:none">
+        <div class="audio-player">
+          <div class="audio-book-title" id="audio-book-title"></div>
+          <div class="audio-book-sub" id="audio-book-sub"></div>
+
+          <div class="audio-text-display" id="audio-text-display">
+            <span id="audio-current-text"></span>
+          </div>
+
+          <div class="audio-progress-wrap">
+            <div class="audio-progress-label">
+              <span id="audio-para-label">Párrafo 1</span>
+              <span id="audio-total-label"></span>
+            </div>
+            <input type="range" class="audio-progress-bar" id="audio-progress" min="0" value="0" oninput="seekAudio(this.value)">
+          </div>
+
+          <div class="audio-controls">
+            <button class="audio-btn" onclick="prevPara()" title="Párrafo anterior">⏮</button>
+            <button class="audio-btn audio-btn-play" id="audio-play-btn" onclick="toggleAudio()">▶</button>
+            <button class="audio-btn" onclick="nextPara()" title="Párrafo siguiente">⏭</button>
+            <select class="audio-speed" id="audio-speed" onchange="changeSpeed(this.value)" title="Velocidad">
+              <option value="0.75">0.75×</option>
+              <option value="1" selected>1×</option>
+              <option value="1.25">1.25×</option>
+              <option value="1.5">1.5×</option>
+              <option value="1.75">1.75×</option>
+              <option value="2">2×</option>
+            </select>
+            <select class="audio-voice" id="audio-voice" onchange="changeVoice(this.value)" title="Voz"></select>
+          </div>
+
+          <div class="audio-new-btn">
+            <button class="btn btn-ghost btn-sm" onclick="resetAudioPlayer()">📄 Cargar otro PDF</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ESTADÍSTICAS -->
@@ -562,6 +703,10 @@
     <span class="mn-icon">🔍</span>
     <span>Temas</span>
   </div>
+  <div class="mobile-nav-item" onclick="showPage('audiolibro')">
+    <span class="mn-icon">🎧</span>
+    <span>Audio</span>
+  </div>
   <div class="mobile-nav-item" onclick="showPage('stats')">
     <span class="mn-icon">📊</span>
     <span>Stats</span>
@@ -623,15 +768,16 @@ function showPage(name) {
   document.querySelectorAll('.mobile-nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => {
-    if(n.textContent.toLowerCase().includes({biblioteca:'biblio',wishlist:'quiero',buscar:'buscar',stats:'estad'}[name] || name)) n.classList.add('active');
+    if(n.textContent.toLowerCase().includes({biblioteca:'biblio',wishlist:'quiero',buscar:'buscar',stats:'estad',audiolibro:'audio'}[name] || name)) n.classList.add('active');
   });
   document.querySelectorAll('.mobile-nav-item').forEach(n => {
-    if(n.textContent.toLowerCase().includes({biblioteca:'biblio',wishlist:'deseos',buscar:'temas',stats:'stats'}[name] || name)) n.classList.add('active');
+    if(n.textContent.toLowerCase().includes({biblioteca:'biblio',wishlist:'deseos',buscar:'temas',stats:'stats',audiolibro:'audio'}[name] || name)) n.classList.add('active');
   });
   if(name === 'buscar') renderTopicCloud();
   if(name === 'biblioteca') renderBooks();
   if(name === 'wishlist') renderWishlist();
   if(name === 'stats') renderStats();
+  if(name === 'audiolibro') initAudioPage();
   window.scrollTo(0,0);
 }
 
@@ -979,6 +1125,194 @@ function searchByTopic() {
   html += '</div>';
   resultsEl.innerHTML = html;
 }
+
+
+// ============ AUDIOLIBRO ============
+let audioParas = [];
+let audioCurrent = 0;
+let audioUtterance = null;
+let audioPlaying = false;
+let audioVoices = [];
+let audioSelectedVoice = null;
+let audioSpeed = 1;
+
+function initAudioPage() {
+  loadVoices();
+}
+
+function loadVoices() {
+  const populate = () => {
+    audioVoices = window.speechSynthesis.getVoices();
+    const sel = document.getElementById('audio-voice');
+    if(!sel || audioVoices.length === 0) return;
+    sel.innerHTML = '';
+    const spanishVoices = audioVoices.filter(v => v.lang.startsWith('es'));
+    const allVoices = spanishVoices.length > 0 ? spanishVoices : audioVoices;
+    allVoices.forEach((v, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = v.name.replace('Microsoft', '').replace('Google', '').trim() + (v.lang ? ' (' + v.lang + ')' : '');
+      sel.appendChild(opt);
+    });
+    audioSelectedVoice = allVoices[0] || null;
+  };
+  if(window.speechSynthesis.getVoices().length > 0) { populate(); }
+  else { window.speechSynthesis.onvoiceschanged = populate; }
+}
+
+function handleAudioDrop(e) {
+  e.preventDefault();
+  document.getElementById('audio-drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if(file && file.type === 'application/pdf') loadAudioPDF(file);
+}
+
+function loadAudioPDF(file) {
+  if(!file) return;
+  document.getElementById('audio-drop-zone').style.display = 'none';
+  document.getElementById('audio-loading').style.display = 'block';
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const typedArray = new Uint8Array(e.target.result);
+      const pdfjsLib = window['pdfjs-dist/build/pdf'];
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+      let fullText = '';
+      for(let i = 1; i <= Math.min(pdf.numPages, 300); i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+      const paragraphs = fullText
+        .split(/\n{2,}|\.\s{2,}/)
+        .map(p => p.replace(/\s+/g, ' ').trim())
+        .filter(p => p.length > 40);
+
+      if(paragraphs.length === 0) {
+        document.getElementById('audio-loading').style.display = 'none';
+        document.getElementById('audio-drop-zone').style.display = 'block';
+        alert('No se pudo extraer texto del PDF. Probá con otro archivo.');
+        return;
+      }
+
+      audioParas = paragraphs;
+      audioCurrent = 0;
+      document.getElementById('audio-loading').style.display = 'none';
+      document.getElementById('audio-player-wrap').style.display = 'block';
+      document.getElementById('audio-book-title').textContent = file.name.replace('.pdf','');
+      document.getElementById('audio-book-sub').textContent = paragraphs.length + ' párrafos · ' + pdf.numPages + ' páginas';
+      const prog = document.getElementById('audio-progress');
+      prog.max = paragraphs.length - 1;
+      prog.value = 0;
+      document.getElementById('audio-total-label').textContent = 'de ' + paragraphs.length;
+      showParagraph(0);
+      loadVoices();
+    } catch(err) {
+      document.getElementById('audio-loading').style.display = 'none';
+      document.getElementById('audio-drop-zone').style.display = 'block';
+      alert('Error al leer el PDF: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showParagraph(idx) {
+  if(idx < 0 || idx >= audioParas.length) return;
+  audioCurrent = idx;
+  const text = audioParas[idx];
+  document.getElementById('audio-current-text').innerHTML = '<span class="highlight">' + text + '</span>';
+  document.getElementById('audio-text-display').scrollTop = 0;
+  document.getElementById('audio-para-label').textContent = 'Párrafo ' + (idx + 1);
+  document.getElementById('audio-progress').value = idx;
+}
+
+function toggleAudio() {
+  if(audioPlaying) { pauseAudio(); } else { playAudio(); }
+}
+
+function playAudio() {
+  window.speechSynthesis.cancel();
+  const text = audioParas[audioCurrent];
+  if(!text) return;
+  audioUtterance = new SpeechSynthesisUtterance(text);
+  audioUtterance.rate = audioSpeed;
+  if(audioSelectedVoice) audioUtterance.voice = audioSelectedVoice;
+  audioUtterance.onend = function() {
+    if(audioCurrent < audioParas.length - 1) {
+      showParagraph(audioCurrent + 1);
+      playAudio();
+    } else {
+      audioPlaying = false;
+      document.getElementById('audio-play-btn').textContent = '▶';
+    }
+  };
+  audioUtterance.onerror = function() {
+    audioPlaying = false;
+    document.getElementById('audio-play-btn').textContent = '▶';
+  };
+  window.speechSynthesis.speak(audioUtterance);
+  audioPlaying = true;
+  document.getElementById('audio-play-btn').textContent = '⏸';
+}
+
+function pauseAudio() {
+  window.speechSynthesis.cancel();
+  audioPlaying = false;
+  document.getElementById('audio-play-btn').textContent = '▶';
+}
+
+function nextPara() {
+  const wasPlaying = audioPlaying;
+  pauseAudio();
+  if(audioCurrent < audioParas.length - 1) {
+    showParagraph(audioCurrent + 1);
+    if(wasPlaying) playAudio();
+  }
+}
+
+function prevPara() {
+  const wasPlaying = audioPlaying;
+  pauseAudio();
+  if(audioCurrent > 0) {
+    showParagraph(audioCurrent - 1);
+    if(wasPlaying) playAudio();
+  }
+}
+
+function seekAudio(val) {
+  const wasPlaying = audioPlaying;
+  pauseAudio();
+  showParagraph(parseInt(val));
+  if(wasPlaying) playAudio();
+}
+
+function changeSpeed(val) {
+  audioSpeed = parseFloat(val);
+  if(audioPlaying) { pauseAudio(); playAudio(); }
+}
+
+function changeVoice(idx) {
+  const spanishVoices = audioVoices.filter(v => v.lang.startsWith('es'));
+  const list = spanishVoices.length > 0 ? spanishVoices : audioVoices;
+  audioSelectedVoice = list[parseInt(idx)] || null;
+  if(audioPlaying) { pauseAudio(); playAudio(); }
+}
+
+function resetAudioPlayer() {
+  pauseAudio();
+  audioParas = [];
+  audioCurrent = 0;
+  document.getElementById('audio-player-wrap').style.display = 'none';
+  document.getElementById('audio-drop-zone').style.display = 'block';
+  document.getElementById('audio-file-input').value = '';
+}
+
+// Detener audio al cambiar de pestaña
+const _origShowPage = showPage;
+window.addEventListener('beforeunload', () => window.speechSynthesis.cancel());
 
 // ============ SIDEBAR COUNT ============
 function updateSidebarCount() {
