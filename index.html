@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mi Biblioteca</title>
+<meta name="description" content="Tu biblioteca personal de libros">
+<meta name="theme-color" content="#8b5e3c">
+<!-- PWA iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mi Biblioteca">
+<link rel="apple-touch-icon" href="icon.png">
+<!-- Splash colors iOS -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- Manifest -->
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8f6f1;
+    --surface: #ffffff;
+    --surface2: #f2efe8;
+    --border: #e8e3d8;
+    --text: #1a1814;
+    --text2: #6b6456;
+    --accent: #8b5e3c;
+    --accent2: #c4956a;
+    --gold: #d4a853;
+    --read: #4a7c6f;
+    --wishlist: #7c6a9e;
+    --shadow: 0 2px 20px rgba(26,24,20,0.07);
+    --shadow-lg: 0 8px 40px rgba(26,24,20,0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* SIDEBAR */
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 220px; min-height: 100vh; background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: fixed; left: 0; top: 0; bottom: 0;
+    padding: 32px 0; z-index: 100;
+  }
+  .logo {
+    padding: 0 24px 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .logo h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px; font-weight: 600; color: var(--accent);
+    line-height: 1.2;
+  }
+  .logo span { font-size: 11px; color: var(--text2); letter-spacing: 0.1em; text-transform: uppercase; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 24px; cursor: pointer;
+    color: var(--text2); font-size: 14px; font-weight: 400;
+    transition: all 0.2s; border-left: 2px solid transparent;
+  }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: #fdf5ef; font-weight: 500; }
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .nav-bottom { margin-top: auto; padding: 0 24px; }
+  .stats-mini { background: var(--surface2); border-radius: 12px; padding: 16px; }
+  .stats-mini .label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; }
+  .stats-mini .num { font-family: 'Cormorant Garamond', serif; font-size: 32px; color: var(--accent); line-height: 1; margin: 4px 0 2px; }
+  .stats-mini .sub { font-size: 12px; color: var(--text2); }
+
+  /* MAIN */
+  .main { margin-left: 220px; flex: 1; padding: 40px 48px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* HEADER */
+  .page-header { margin-bottom: 36px; }
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 40px; font-weight: 300; color: var(--text);
+    line-height: 1;
+  }
+  .page-title em { font-style: italic; color: var(--accent); }
+  .page-subtitle { color: var(--text2); font-size: 14px; margin-top: 6px; }
+
+  /* SEARCH BAR */
+  .search-bar {
+    display: flex; gap: 12px; margin-bottom: 28px; align-items: center;
+  }
+  .search-input {
+    flex: 1; padding: 12px 18px; border: 1px solid var(--border);
+    border-radius: 10px; font-size: 14px; font-family: inherit;
+    background: var(--surface); color: var(--text);
+    outline: none; transition: border-color 0.2s;
+  }
+  .search-input:focus { border-color: var(--accent2); }
+  .btn {
+    padding: 11px 20px; border-radius: 10px; border: none;
+    font-size: 13px; font-family: inherit; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #7a5235; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+  .btn-sm { padding: 7px 14px; font-size: 12px; }
+
+  /* FILTER TABS */
+  .filter-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .filter-tab {
+    padding: 7px 16px; border-radius: 20px; font-size: 13px;
+    cursor: pointer; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text2);
+    transition: all 0.2s;
+  }
+  .filter-tab:hover { border-color: var(--accent2); color: var(--accent); }
+  .filter-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  /* BOOK GRID */
+  .book-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+  }
+  .book-card {
+    background: var(--surface); border-radius: 14px;
+    border: 1px solid var(--border); overflow: hidden;
+    cursor: pointer; transition: all 0.25s;
+    box-shadow: var(--shadow);
+  }
+  .book-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--accent2); }
+  .book-cover {
+    height: 200px; display: flex; align-items: center; justify-content: center;
+    font-size: 48px; position: relative;
+    background: linear-gradient(135deg, var(--surface2), var(--border));
+  }
+  .book-cover .genre-tag {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(255,255,255,0.92); border-radius: 6px;
+    padding: 3px 8px; font-size: 10px; color: var(--text2);
+    font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .book-status {
+    position: absolute; top: 10px; right: 10px;
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .status-read { background: var(--read); }
+  .status-wishlist { background: var(--wishlist); }
+  .status-reading { background: var(--gold); }
+  .book-info { padding: 14px 16px; }
+  .book-title-card {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px; font-weight: 600; line-height: 1.3;
+    margin-bottom: 4px; color: var(--text);
+  }
+  .book-author-card { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+  .book-rating { display: flex; gap: 2px; }
+  .star { font-size: 12px; color: var(--border); }
+  .star.filled { color: var(--gold); }
+
+  /* ADD BOOK FORM */
+  .form-overlay {
+    position: fixed; inset: 0; background: rgba(26,24,20,0.4);
+    z-index: 200; display: none; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .form-overlay.open { display: flex; }
+  .form-card {
+    background: var(--surface); border-radius: 20px;
+    padding: 36px; width: 560px; max-width: 95vw; max-height: 90vh;
+    overflow-y: auto; box-shadow: var(--shadow-lg);
+  }
+  .form-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px; font-weight: 400; margin-bottom: 24px; color: var(--accent);
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1/-1; }
+  .form-label { font-size: 12px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; }
+  .form-input, .form-select, .form-textarea {
+    padding: 10px 14px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 14px; font-family: inherit;
+    background: var(--bg); color: var(--text); outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent2); }
+  .form-textarea { resize: vertical; min-height: 90px; }
+  .star-select { display: flex; gap: 6px; }
+  .star-btn { font-size: 24px; cursor: pointer; color: var(--border); transition: color 0.15s; }
+  .star-btn.on { color: var(--gold); }
+  .form-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+
+  /* BOOK DETAIL */
+  .detail-overlay {
+    position: fixed; inset: 0; background: rgba(26,24,20,0.4);
+    z-index: 200; display: none; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .detail-overlay.open { display: flex; }
+  .detail-card {
+    background: var(--surface); border-radius: 20px;
+    padding: 40px; width: 640px; max-width: 95vw; max-height: 90vh;
+    overflow-y: auto; box-shadow: var(--shadow-lg);
+  }
+  .detail-header { display: flex; gap: 24px; margin-bottom: 28px; }
+  .detail-cover {
+    width: 100px; height: 140px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 52px; background: var(--surface2); flex-shrink: 0;
+  }
+  .detail-meta h2 { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 600; margin-bottom: 4px; }
+  .detail-meta .author { color: var(--text2); font-size: 15px; margin-bottom: 8px; }
+  .detail-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .badge {
+    padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  }
+  .badge-read { background: #e8f4f1; color: var(--read); }
+  .badge-wishlist { background: #f0edf8; color: var(--wishlist); }
+  .badge-reading { background: #fdf3e3; color: #9a7c38; }
+  .badge-genre { background: var(--surface2); color: var(--text2); }
+  .detail-stars { display: flex; gap: 3px; font-size: 18px; }
+  .detail-section { margin-bottom: 20px; }
+  .detail-section-title { font-size: 11px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .detail-text { font-size: 14px; color: var(--text); line-height: 1.7; }
+  .detail-actions { display: flex; gap: 10px; margin-top: 24px; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 36px; }
+  .stat-card {
+    background: var(--surface); border-radius: 14px; padding: 24px;
+    border: 1px solid var(--border);
+  }
+  .stat-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .stat-num { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 300; color: var(--accent); line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  .genre-chart { background: var(--surface); border-radius: 14px; padding: 28px; border: 1px solid var(--border); margin-bottom: 24px; }
+  .genre-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .genre-name { font-size: 13px; min-width: 120px; }
+  .genre-bar-bg { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; }
+  .genre-bar { height: 6px; background: var(--accent2); border-radius: 3px; transition: width 0.6s ease; }
+  .genre-count { font-size: 12px; color: var(--text2); min-width: 24px; text-align: right; }
+  .top-books { background: var(--surface); border-radius: 14px; padding: 28px; border: 1px solid var(--border); }
+  .top-book-row { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .top-book-row:last-child { border-bottom: none; }
+  .top-num { font-family: 'Cormorant Garamond', serif; font-size: 24px; color: var(--border); min-width: 28px; }
+  .top-book-info h4 { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+  .top-book-info span { font-size: 12px; color: var(--text2); }
+  .top-stars { margin-left: auto; font-size: 13px; color: var(--gold); }
+
+  /* AI SEARCH */
+  .ai-box {
+    background: var(--surface); border-radius: 16px; padding: 32px;
+    border: 1px solid var(--border); margin-bottom: 28px;
+  }
+  .ai-prompt { display: flex; gap: 12px; }
+  .ai-result {
+    margin-top: 20px; padding: 20px; background: var(--surface2);
+    border-radius: 12px; border-left: 3px solid var(--accent2);
+    font-size: 14px; line-height: 1.7; color: var(--text);
+    display: none;
+  }
+  .ai-result.visible { display: block; }
+  .ai-thinking { color: var(--text2); font-style: italic; }
+
+  /* WISHLIST */
+  .wish-list { display: flex; flex-direction: column; gap: 12px; }
+  .wish-item {
+    background: var(--surface); border-radius: 12px; padding: 18px 20px;
+    border: 1px solid var(--border); display: flex; align-items: center; gap: 16px;
+    transition: all 0.2s;
+  }
+  .wish-item:hover { border-color: var(--wishlist); box-shadow: var(--shadow); }
+  .wish-emoji { font-size: 32px; }
+  .wish-info { flex: 1; }
+  .wish-info h3 { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; margin-bottom: 2px; }
+  .wish-info span { font-size: 13px; color: var(--text2); }
+  .wish-note { font-size: 12px; color: var(--text2); margin-top: 4px; font-style: italic; }
+  .wish-actions { display: flex; gap: 8px; }
+
+  /* TOPICS */
+  .topics-input-wrap { position: relative; }
+  .topics-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .topic-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #fdf0e6; color: var(--accent); border: 1px solid #f0d5be;
+    border-radius: 20px; padding: 4px 10px; font-size: 12px;
+  }
+  .topic-tag .remove { cursor: pointer; font-size: 14px; line-height: 1; color: var(--accent2); }
+  .topic-tag .remove:hover { color: var(--accent); }
+  .topics-display { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .topic-pill {
+    background: #fdf0e6; color: var(--accent); border: 1px solid #f0d5be;
+    border-radius: 20px; padding: 3px 10px; font-size: 11px;
+  }
+  .topic-pill-card {
+    background: var(--surface2); color: var(--text2);
+    border-radius: 4px; padding: 2px 6px; font-size: 10px;
+  }
+
+  /* EMPTY */
+  .empty-state {
+    text-align: center; padding: 80px 40px; color: var(--text2);
+  }
+  .empty-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.4; }
+  .empty-text { font-family: 'Cormorant Garamond', serif; font-size: 22px; margin-bottom: 8px; color: var(--text); }
+  .empty-sub { font-size: 14px; margin-bottom: 24px; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media(max-width: 768px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 24px 16px; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .book-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <h1>Mi Biblioteca</h1>
+      <span>colección personal</span>
+    </div>
+    <nav>
+      <div class="nav-item active" onclick="showPage('biblioteca')">
+        <span class="nav-icon">📚</span> Biblioteca
+      </div>
+      <div class="nav-item" onclick="showPage('wishlist')">
+        <span class="nav-icon">✨</span> Quiero Leer
+      </div>
+      <div class="nav-item" onclick="showPage('buscar')">
+        <span class="nav-icon">🔍</span> Buscar Temas
+      </div>
+      <div class="nav-item" onclick="showPage('stats')">
+        <span class="nav-icon">📊</span> Estadísticas
+      </div>
+    </nav>
+    <div class="nav-bottom">
+      <div class="stats-mini">
+        <div class="label">Libros leídos</div>
+        <div class="num" id="sidebar-count">0</div>
+        <div class="sub">en tu colección</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- BIBLIOTECA -->
+    <div class="page active" id="page-biblioteca">
+      <div class="page-header">
+        <h2 class="page-title">Tu <em>Biblioteca</em></h2>
+        <p class="page-subtitle">Todos tus libros en un solo lugar</p>
+      </div>
+      <div class="search-bar">
+        <input type="text" class="search-input" id="search-books" placeholder="Buscar por título, autor o género..." oninput="filterBooks()">
+        <button class="btn btn-primary" onclick="openAddForm('read')">+ Agregar libro</button>
+      </div>
+      <div class="filter-tabs">
+        <span class="filter-tab active" onclick="setFilter('all', this)">Todos</span>
+        <span class="filter-tab" onclick="setFilter('read', this)">✓ Leídos</span>
+        <span class="filter-tab" onclick="setFilter('reading', this)">📖 Leyendo</span>
+      </div>
+      <div class="book-grid" id="book-grid"></div>
+    </div>
+
+    <!-- WISHLIST -->
+    <div class="page" id="page-wishlist">
+      <div class="page-header">
+        <h2 class="page-title">Quiero <em>Leer</em></h2>
+        <p class="page-subtitle">Tu lista de deseos literaria</p>
+      </div>
+      <div style="margin-bottom: 20px;">
+        <button class="btn btn-primary" onclick="openAddForm('wishlist')">+ Agregar a lista</button>
+      </div>
+      <div class="wish-list" id="wish-list"></div>
+    </div>
+
+    <!-- BUSCAR POR TEMAS -->
+    <div class="page" id="page-buscar">
+      <div class="page-header">
+        <h2 class="page-title">Buscar <em>por Temas</em></h2>
+        <p class="page-subtitle">Encontrá libros por tema o palabra clave</p>
+      </div>
+      <div class="ai-box">
+        <p style="font-size:14px;color:var(--text2);margin-bottom:16px">
+          Escribí un tema y te muestra todos los libros que lo tienen. Por ejemplo: <em>amor</em>, <em>productividad</em>, <em>historia</em>...
+        </p>
+        <div class="ai-prompt">
+          <input type="text" class="search-input" id="topic-query" placeholder="Buscar tema..." oninput="searchByTopic()">
+        </div>
+      </div>
+      <div id="all-topics-cloud" style="margin-bottom:28px"></div>
+      <div id="topic-results"></div>
+    </div>
+    
+    <!-- ESTADÍSTICAS -->
+    <div class="page" id="page-stats">
+      <div class="page-header">
+        <h2 class="page-title">Tus <em>Estadísticas</em></h2>
+        <p class="page-subtitle">Un resumen de tu vida lectora</p>
+      </div>
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="genre-chart">
+        <div class="detail-section-title">Libros por género</div>
+        <div id="genre-chart-body" style="margin-top: 16px;"></div>
+      </div>
+      <div class="top-books">
+        <div class="detail-section-title">Tus libros mejor puntuados</div>
+        <div id="top-books-list" style="margin-top: 12px;"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ADD FORM OVERLAY -->
+<div class="form-overlay" id="add-overlay">
+  <div class="form-card">
+    <h2 class="form-title" id="form-title-text">Agregar libro</h2>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label class="form-label">Título *</label>
+        <input type="text" class="form-input" id="f-title" placeholder="Título del libro">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Autor *</label>
+        <input type="text" class="form-input" id="f-author" placeholder="Autor">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Género</label>
+        <select class="form-select" id="f-genre">
+          <option value="">Seleccionar...</option>
+          <option>Ficción</option>
+          <option>No ficción</option>
+          <option>Romance</option>
+          <option>Misterio</option>
+          <option>Fantasía</option>
+          <option>Ciencia ficción</option>
+          <option>Thriller</option>
+          <option>Historia</option>
+          <option>Autoayuda</option>
+          <option>Filosofía</option>
+          <option>Psicología</option>
+          <option>Clásicos</option>
+          <option>Otro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Año de lectura</label>
+        <input type="number" class="form-input" id="f-year" placeholder="2024">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Estado</label>
+        <select class="form-select" id="f-status">
+          <option value="read">✓ Leído</option>
+          <option value="reading">📖 Leyendo</option>
+          <option value="wishlist">✨ Quiero leer</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Puntuación</label>
+        <div class="star-select" id="star-select">
+          <span class="star-btn" onclick="setRating(1)">★</span>
+          <span class="star-btn" onclick="setRating(2)">★</span>
+          <span class="star-btn" onclick="setRating(3)">★</span>
+          <span class="star-btn" onclick="setRating(4)">★</span>
+          <span class="star-btn" onclick="setRating(5)">★</span>
+        </div>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Emoji portada</label>
+        <input type="text" class="form-input" id="f-emoji" placeholder="📖 (opcional, un emoji que represente el libro)">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Temas / Índice de contenido</label>
+        <div class="topics-input-wrap">
+          <input type="text" class="form-input" id="f-topic-input" placeholder="Ej: amor, liderazgo, historia... (Enter para agregar)">
+          <div class="topics-tags" id="f-topics-tags"></div>
+        </div>
+        <small style="color:var(--text2);font-size:11px;margin-top:4px">Agregá los temas principales que trata el libro. La IA los usará para encontrarlo.</small>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Reseña / Notas personales</label>
+        <textarea class="form-textarea" id="f-review" placeholder="¿De qué trata el libro? ¿Qué te pareció? ¿Qué aprendiste?"></textarea>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">¿Por qué lo querés leer? (solo lista de deseos)</label>
+        <input type="text" class="form-input" id="f-reason" placeholder="Ej: Lo recomendó una amiga, lo vi en redes...">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeAddForm()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveBook()">Guardar libro</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL OVERLAY -->
+<div class="detail-overlay" id="detail-overlay">
+  <div class="detail-card" id="detail-card">
+  </div>
+</div>
+
+<script>
+// ============ TOPICS ============
+let currentTopics = [];
+function initTopicInput() {
+  currentTopics = [];
+  renderTopicTags();
+  const input = document.getElementById('f-topic-input');
+  if(!input) return;
+  input.onkeydown = function(e) {
+    if(e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = input.value.trim().replace(/,/g,'');
+      if(val && !currentTopics.includes(val)) {
+        currentTopics.push(val);
+        renderTopicTags();
+      }
+      input.value = '';
+    }
+  };
+}
+function renderTopicTags() {
+  const el = document.getElementById('f-topics-tags');
+  if(!el) return;
+  el.innerHTML = currentTopics.map((t,i) => `
+    <span class="topic-tag">${t}<span class="remove" onclick="removeTopic(${i})">×</span></span>
+  `).join('');
+}
+function removeTopic(i) {
+  currentTopics.splice(i,1);
+  renderTopicTags();
+}
+
+// ============ DATA ============
+let books = JSON.parse(localStorage.getItem('biblioteca_books') || '[]');
+let currentRating = 0;
+let currentFilter = 'all';
+let editingId = null;
+
+function save() {
+  localStorage.setItem('biblioteca_books', JSON.stringify(books));
+}
+
+// ============ NAVIGATION ============
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if(n.textContent.toLowerCase().includes({biblioteca:'biblio',wishlist:'quiero',buscar:'buscar',stats:'estad'}[name] || name)) n.classList.add('active');
+  });
+  if(name === 'buscar') renderTopicCloud();
+  if(name === 'biblioteca') renderBooks();
+  if(name === 'wishlist') renderWishlist();
+  if(name === 'stats') renderStats();
+}
+
+// ============ FORM ============
+function openAddForm(status, bookId) {
+  editingId = bookId || null;
+  const overlay = document.getElementById('add-overlay');
+  overlay.classList.add('open');
+  currentRating = 0;
+  updateStars(0);
+  initTopicInput();
+  if(bookId) {
+    const b = books.find(x => x.id === bookId);
+    document.getElementById('form-title-text').textContent = 'Editar libro';
+    document.getElementById('f-title').value = b.title;
+    document.getElementById('f-author').value = b.author;
+    document.getElementById('f-genre').value = b.genre || '';
+    document.getElementById('f-year').value = b.year || '';
+    document.getElementById('f-status').value = b.status;
+    document.getElementById('f-emoji').value = b.emoji || '';
+    document.getElementById('f-review').value = b.review || '';
+    document.getElementById('f-reason').value = b.reason || '';
+    currentTopics = b.topics ? [...b.topics] : [];
+    renderTopicTags();
+    currentRating = b.rating || 0;
+    updateStars(currentRating);
+  } else {
+    document.getElementById('form-title-text').textContent = 'Agregar libro';
+    document.getElementById('f-title').value = '';
+    document.getElementById('f-author').value = '';
+    document.getElementById('f-genre').value = '';
+    document.getElementById('f-year').value = new Date().getFullYear();
+    document.getElementById('f-status').value = status || 'read';
+    document.getElementById('f-emoji').value = '';
+    document.getElementById('f-review').value = '';
+    document.getElementById('f-reason').value = '';
+  }
+}
+function closeAddForm() {
+  document.getElementById('add-overlay').classList.remove('open');
+  editingId = null;
+}
+function setRating(n) { currentRating = n; updateStars(n); }
+function updateStars(n) {
+  document.querySelectorAll('.star-btn').forEach((s, i) => {
+    s.classList.toggle('on', i < n);
+  });
+}
+function saveBook() {
+  const title = document.getElementById('f-title').value.trim();
+  const author = document.getElementById('f-author').value.trim();
+  if(!title || !author) { alert('Completá al menos el título y el autor.'); return; }
+  const book = {
+    id: editingId || Date.now().toString(),
+    title, author,
+    genre: document.getElementById('f-genre').value,
+    year: document.getElementById('f-year').value,
+    status: document.getElementById('f-status').value,
+    emoji: document.getElementById('f-emoji').value.trim() || randomEmoji(),
+    topics: [...currentTopics],
+    review: document.getElementById('f-review').value,
+    reason: document.getElementById('f-reason').value,
+    rating: currentRating,
+    added: editingId ? (books.find(x => x.id === editingId)?.added || Date.now()) : Date.now()
+  };
+  if(editingId) {
+    const idx = books.findIndex(x => x.id === editingId);
+    books[idx] = book;
+  } else {
+    books.unshift(book);
+  }
+  save();
+  closeAddForm();
+  closeDetail();
+  renderBooks();
+  renderWishlist();
+  updateSidebarCount();
+}
+function randomEmoji() {
+  const emojis = ['📖','📕','📗','📘','📙','🔖','📜','🗒️','✍️','🌟','🌙','🌿','🍂','⭐','🌸'];
+  return emojis[Math.floor(Math.random()*emojis.length)];
+}
+function deleteBook(id) {
+  if(!confirm('¿Eliminás este libro?')) return;
+  books = books.filter(b => b.id !== id);
+  save();
+  closeDetail();
+  renderBooks();
+  renderWishlist();
+  renderStats();
+  updateSidebarCount();
+}
+
+// ============ RENDER BOOKS ============
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderBooks();
+}
+function filterBooks() { renderBooks(); }
+function renderBooks() {
+  const q = (document.getElementById('search-books')?.value || '').toLowerCase();
+  let list = books.filter(b => b.status !== 'wishlist');
+  if(currentFilter !== 'all') list = list.filter(b => b.status === currentFilter);
+  if(q) list = list.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || (b.genre||'').toLowerCase().includes(q));
+  const grid = document.getElementById('book-grid');
+  if(!grid) return;
+  if(list.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-icon">📚</div>
+      <div class="empty-text">No encontramos libros</div>
+      <div class="empty-sub">Agregá tu primer libro o cambiá el filtro</div>
+      <button class="btn btn-primary" onclick="openAddForm('read')">+ Agregar libro</button>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = list.map(b => `
+    <div class="book-card" onclick="openDetail('${b.id}')">
+      <div class="book-cover">
+        <span>${b.emoji || '📖'}</span>
+        ${b.genre ? `<span class="genre-tag">${b.genre}</span>` : ''}
+        <span class="book-status ${b.status === 'read' ? 'status-read' : 'status-reading'}"></span>
+      </div>
+      <div class="book-info">
+        <div class="book-title-card">${b.title}</div>
+        <div class="book-author-card">${b.author}</div>
+        ${b.topics && b.topics.length ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px">${b.topics.slice(0,3).map(t=>`<span class="topic-pill-card">${t}</span>`).join('')}</div>` : ''}
+        <div class="book-rating">${starsHTML(b.rating, 13)}</div>
+      </div>
+    </div>
+  `).join('');
+  updateSidebarCount();
+}
+
+function starsHTML(r, size) {
+  size = size || 14;
+  return [1,2,3,4,5].map(i => `<span class="star ${i <= (r||0) ? 'filled' : ''}" style="font-size:${size}px">★</span>`).join('');
+}
+
+// ============ DETAIL ============
+function openDetail(id) {
+  const b = books.find(x => x.id === id);
+  if(!b) return;
+  const statusMap = {read:'badge-read', wishlist:'badge-wishlist', reading:'badge-reading'};
+  const statusLabel = {read:'✓ Leído', wishlist:'✨ Quiero leer', reading:'📖 Leyendo'};
+  document.getElementById('detail-card').innerHTML = `
+    <div class="detail-header">
+      <div class="detail-cover">${b.emoji || '📖'}</div>
+      <div class="detail-meta">
+        <h2>${b.title}</h2>
+        <div class="author">${b.author}</div>
+        <div class="detail-badges">
+          <span class="badge ${statusMap[b.status]}">${statusLabel[b.status]}</span>
+          ${b.genre ? `<span class="badge badge-genre">${b.genre}</span>` : ''}
+          ${b.year ? `<span class="badge badge-genre">${b.year}</span>` : ''}
+        </div>
+        ${b.rating ? `<div class="detail-stars">${starsHTML(b.rating, 20)}</div>` : ''}
+      </div>
+    </div>
+    ${b.topics && b.topics.length ? `
+    <div class="detail-section">
+      <div class="detail-section-title">Temas / Índice</div>
+      <div class="topics-display">${b.topics.map(t=>`<span class="topic-pill">${t}</span>`).join('')}</div>
+    </div>` : ''}
+    ${b.review ? `
+    <div class="detail-section">
+      <div class="detail-section-title">Reseña / Notas</div>
+      <div class="detail-text">${b.review}</div>
+    </div>` : ''}
+    ${b.reason ? `
+    <div class="detail-section">
+      <div class="detail-section-title">¿Por qué lo querés leer?</div>
+      <div class="detail-text">${b.reason}</div>
+    </div>` : ''}
+    <div class="detail-actions">
+      <button class="btn btn-secondary" onclick="closeDetail()">Cerrar</button>
+      <button class="btn btn-ghost btn-sm" onclick="openAddForm('read','${b.id}')">✏️ Editar</button>
+      <button class="btn btn-ghost btn-sm" style="color:#c0392b" onclick="deleteBook('${b.id}')">🗑 Eliminar</button>
+    </div>
+  `;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+function closeDetail() {
+  document.getElementById('detail-overlay').classList.remove('open');
+}
+
+// ============ WISHLIST ============
+function renderWishlist() {
+  const list = books.filter(b => b.status === 'wishlist');
+  const el = document.getElementById('wish-list');
+  if(!el) return;
+  if(list.length === 0) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">✨</div>
+      <div class="empty-text">Tu lista de deseos está vacía</div>
+      <div class="empty-sub">Agregá libros que querés leer próximamente</div>
+      <button class="btn btn-primary" onclick="openAddForm('wishlist')">+ Agregar libro</button>
+    </div>`;
+    return;
+  }
+  el.innerHTML = list.map(b => `
+    <div class="wish-item">
+      <span class="wish-emoji">${b.emoji || '📖'}</span>
+      <div class="wish-info">
+        <h3>${b.title}</h3>
+        <span>${b.author}${b.genre ? ' · ' + b.genre : ''}</span>
+        ${b.reason ? `<div class="wish-note">"${b.reason}"</div>` : ''}
+      </div>
+      <div class="wish-actions">
+        <button class="btn btn-secondary btn-sm" onclick="markAsRead('${b.id}')">✓ Marcar leído</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteBook('${b.id}')">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+function markAsRead(id) {
+  const b = books.find(x => x.id === id);
+  if(b) { b.status = 'read'; save(); renderWishlist(); renderBooks(); }
+}
+
+// ============ STATS ============
+function renderStats() {
+  const read = books.filter(b => b.status === 'read').length;
+  const reading = books.filter(b => b.status === 'reading').length;
+  const wishlist = books.filter(b => b.status === 'wishlist').length;
+  const rated = books.filter(b => b.rating > 0);
+  const avgRating = rated.length ? (rated.reduce((s,b) => s + b.rating, 0) / rated.length).toFixed(1) : '—';
+
+  const grid = document.getElementById('stats-grid');
+  if(!grid) return;
+  grid.innerHTML = [
+    {label:'Libros leídos', num: read, sub: 'en tu biblioteca'},
+    {label:'Leyendo ahora', num: reading, sub: 'en curso'},
+    {label:'Lista de deseos', num: wishlist, sub: 'por leer'},
+    {label:'Puntuación media', num: avgRating, sub: 'sobre 5 estrellas'},
+  ].map(s => `
+    <div class="stat-card">
+      <div class="stat-label">${s.label}</div>
+      <div class="stat-num">${s.num}</div>
+      <div class="stat-sub">${s.sub}</div>
+    </div>
+  `).join('');
+
+  // Genre chart
+  const genreMap = {};
+  books.forEach(b => { if(b.genre) genreMap[b.genre] = (genreMap[b.genre]||0)+1; });
+  const genres = Object.entries(genreMap).sort((a,b) => b[1]-a[1]);
+  const maxG = genres[0]?.[1] || 1;
+  const gEl = document.getElementById('genre-chart-body');
+  if(gEl) gEl.innerHTML = genres.length ? genres.map(([g, c]) => `
+    <div class="genre-row">
+      <span class="genre-name">${g}</span>
+      <div class="genre-bar-bg"><div class="genre-bar" style="width:${(c/maxG)*100}%"></div></div>
+      <span class="genre-count">${c}</span>
+    </div>
+  `).join('') : '<p style="color:var(--text2);font-size:14px">Sin datos de géneros aún.</p>';
+
+  // Top books
+  const top = books.filter(b => b.rating > 0).sort((a,b) => b.rating-a.rating).slice(0,5);
+  const tEl = document.getElementById('top-books-list');
+  if(tEl) tEl.innerHTML = top.length ? top.map((b,i) => `
+    <div class="top-book-row">
+      <span class="top-num">${i+1}</span>
+      <div class="top-book-info">
+        <h4>${b.title}</h4>
+        <span>${b.author}</span>
+      </div>
+      <span class="top-stars">${'★'.repeat(b.rating)}</span>
+    </div>
+  `).join('') : '<p style="color:var(--text2);font-size:14px">Puntúa tus libros para ver el ranking.</p>';
+}
+
+// ============ TOPIC SEARCH ============
+function renderTopicCloud() {
+  const cloudEl = document.getElementById('all-topics-cloud');
+  if(!cloudEl) return;
+  const topicMap = {};
+  books.forEach(b => {
+    (b.topics || []).forEach(t => { topicMap[t] = (topicMap[t] || 0) + 1; });
+  });
+  const topics = Object.entries(topicMap).sort((a,b) => b[1]-a[1]);
+  if(topics.length === 0) {
+    cloudEl.innerHTML = '<p style="font-size:13px;color:var(--text2)">Sin temas todavia. Agrega temas a tus libros para poder buscarlos.</p>';
+    return;
+  }
+  let html = '<div style="margin-bottom:10px;font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em">Todos los temas</div><div style="display:flex;flex-wrap:wrap;gap:8px">';
+  topics.forEach(function(entry) {
+    const t = entry[0], c = entry[1];
+    html += '<span onclick="filterByTopicTag(\'' + t + '\')" style="cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:13px;color:var(--text2);transition:all 0.2s" onmouseover="this.style.background=\'var(--accent)\';this.style.color=\'white\'" onmouseout="this.style.background=\'var(--surface)\';this.style.color=\'var(--text2)\'">' + t + ' <span style="font-size:11px;opacity:0.6">' + c + '</span></span>';
+  });
+  html += '</div>';
+  cloudEl.innerHTML = html;
+  searchByTopic();
+}
+
+function filterByTopicTag(topic) {
+  const input = document.getElementById('topic-query');
+  if(input) { input.value = topic; searchByTopic(); }
+}
+
+function searchByTopic() {
+  const q = (document.getElementById('topic-query') ? document.getElementById('topic-query').value : '').toLowerCase().trim();
+  const resultsEl = document.getElementById('topic-results');
+  if(!resultsEl) return;
+  if(!q) { resultsEl.innerHTML = ''; return; }
+
+  const matched = books.filter(function(b) {
+    const topicsMatch = (b.topics || []).some(function(t){ return t.toLowerCase().includes(q); });
+    const reviewMatch = (b.review || '').toLowerCase().includes(q);
+    const titleMatch = b.title.toLowerCase().includes(q);
+    return topicsMatch || reviewMatch || titleMatch;
+  });
+
+  if(matched.length === 0) {
+    resultsEl.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128269;</div><div class="empty-text">Sin resultados para "' + q + '"</div><div class="empty-sub">Proba con otro tema o agrega mas temas a tus libros</div></div>';
+    return;
+  }
+
+  const statusLabel = {read:'&#10003; Leido', wishlist:'&#10024; Quiero leer', reading:'&#128214; Leyendo'};
+  const statusColor = {read:'var(--read)', wishlist:'var(--wishlist)', reading:'var(--gold)'};
+
+  let html = '<div style="font-size:13px;color:var(--text2);margin-bottom:16px">' + matched.length + ' libro' + (matched.length>1?'s':'') + ' encontrado' + (matched.length>1?'s':'') + ' para <strong style="color:var(--accent)">"' + q + '"</strong></div>';
+  html += '<div style="display:flex;flex-direction:column;gap:12px">';
+
+  matched.forEach(function(b) {
+    const matchedTopics = (b.topics||[]).filter(function(t){ return t.toLowerCase().includes(q); });
+    let topicsHtml = '';
+    if(matchedTopics.length) {
+      topicsHtml = '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">';
+      matchedTopics.forEach(function(t){ topicsHtml += '<span style="background:#fdf0e6;color:var(--accent);border:1px solid #f0d5be;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:500">' + t + '</span>'; });
+      topicsHtml += '</div>';
+    }
+    const reviewSnippet = b.review ? '<div style="font-size:13px;color:var(--text2);line-height:1.5">' + b.review.substring(0,120) + (b.review.length>120?'...':'') + '</div>' : '';
+    const starsHtml = b.rating ? '<div style="font-size:13px;color:var(--gold);white-space:nowrap">' + '&#9733;'.repeat(b.rating) + '</div>' : '';
+    html += '<div onclick="openDetail(\'' + b.id + '\')" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px;cursor:pointer;transition:all 0.2s;display:flex;gap:16px;align-items:flex-start" onmouseover="this.style.borderColor=\'var(--accent2)\';this.style.boxShadow=\'var(--shadow)\'" onmouseout="this.style.borderColor=\'var(--border)\';this.style.boxShadow=\'none\'">';
+    html += '<span style="font-size:36px">' + (b.emoji||'&#128214;') + '</span>';
+    html += '<div style="flex:1">';
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-family:\'Cormorant Garamond\',serif;font-size:18px;font-weight:600">' + b.title + '</span><span style="font-size:11px;color:' + (statusColor[b.status]||'var(--text2)') + ';font-weight:500">' + (statusLabel[b.status]||'') + '</span></div>';
+    html += '<div style="font-size:13px;color:var(--text2);margin-bottom:8px">' + b.author + (b.genre?' &middot; '+b.genre:'') + '</div>';
+    html += topicsHtml + reviewSnippet;
+    html += '</div>' + starsHtml + '</div>';
+  });
+
+  html += '</div>';
+  resultsEl.innerHTML = html;
+}
+
+// ============ SIDEBAR COUNT ============
+function updateSidebarCount() {
+  const count = books.filter(b => b.status !== 'wishlist').length;
+  const el = document.getElementById('sidebar-count');
+  if(el) el.textContent = count;
+}
+
+// ============ CLOSE ON OVERLAY CLICK ============
+document.getElementById('add-overlay').addEventListener('click', function(e) {
+  if(e.target === this) closeAddForm();
+});
+document.getElementById('detail-overlay').addEventListener('click', function(e) {
+  if(e.target === this) closeDetail();
+});
+
+// ============ INIT ============
+renderBooks();
+updateSidebarCount();
+
+// Sample books if empty
+if(books.length === 0) {
+  books = [
+    { id:'1', title:'El Alquimista', author:'Paulo Coelho', genre:'Ficción', year:'2022', status:'read', emoji:'🌟', topics:['sueños','destino','espiritualidad','viaje','propósito de vida'], review:'Un libro sobre seguir los sueños y escuchar el corazón. Trata sobre el viaje de Santiago, un pastor andaluz, en busca de un tesoro. Habla de la leyenda personal, el destino y la conexión con el universo.', rating:5, added: Date.now()-100000 },
+    { id:'2', title:'Orgullo y Prejuicio', author:'Jane Austen', genre:'Clásicos', year:'2023', status:'read', emoji:'💌', topics:['amor','matrimonio','clases sociales','prejuicio','romance'], review:'Una novela sobre el amor, el matrimonio y las clases sociales en la Inglaterra del siglo XIX. Elizabeth Bennet y Mr. Darcy protagonizan un romance lleno de malentendidos y prejuicios.', rating:5, added: Date.now()-200000 },
+    { id:'3', title:'Hábitos Atómicos', author:'James Clear', genre:'Autoayuda', year:'2024', status:'read', emoji:'⚡', topics:['hábitos','productividad','motivación','psicología','cambio de comportamiento'], review:'Explica cómo los pequeños cambios de conducta generan resultados extraordinarios. Muy práctico, con técnicas concretas para crear hábitos positivos y eliminar los negativos.', rating:4, added: Date.now()-300000 },
+    { id:'4', title:'Cien Años de Soledad', author:'Gabriel García Márquez', genre:'Ficción', year:'', status:'reading', emoji:'🌿', topics:['familia','soledad','realismo mágico','historia','latinoamérica'], review:'La saga de la familia Buendía en Macondo. Realismo mágico en su máxima expresión.', rating:0, added: Date.now()-50000 },
+    { id:'5', title:'La Sombra del Viento', author:'Carlos Ruiz Zafón', genre:'Misterio', year:'', status:'wishlist', emoji:'🌙', topics:['misterio','libros','barcelona','secretos'], reason:'Lo recomendó mi mamá, dicen que es imposible dejarlo.', rating:0, added: Date.now() },
+  ];
+  save();
+  renderBooks();
+  renderWishlist();
+  updateSidebarCount();
+}
+
+// ============ PWA INSTALL ============
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Mostrar botón en sidebar (desktop)
+  const sidebarBtn = document.getElementById('install-btn');
+  if(sidebarBtn) sidebarBtn.style.display = 'flex';
+  // Mostrar banner mobile
+  showInstallBanner();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  hideInstallBanner();
+  const sidebarBtn = document.getElementById('install-btn');
+  if(sidebarBtn) sidebarBtn.style.display = 'none';
+});
+
+function showInstallBanner() {
+  // Solo en mobile
+  if(window.innerWidth > 768) return;
+  // No mostrar si ya está instalada
+  if(window.matchMedia('(display-mode: standalone)').matches) return;
+  const banner = document.getElementById('install-banner');
+  if(banner) {
+    banner.style.display = 'flex';
+    setTimeout(() => banner.style.opacity = '1', 100);
+  }
+}
+
+function hideInstallBanner() {
+  const banner = document.getElementById('install-banner');
+  if(banner) {
+    banner.style.opacity = '0';
+    setTimeout(() => banner.style.display = 'none', 300);
+  }
+}
+
+function installApp() {
+  if(deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+  }
+  hideInstallBanner();
+}
+
+// Shortcut: abrir form de agregar libro desde launcher
+if(new URLSearchParams(window.location.search).get('action') === 'add') {
+  setTimeout(() => openAddForm('read'), 300);
+}
+
+// ============ SERVICE WORKER ============
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', () => {
+        if(newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          // Nueva versión disponible — podría mostrar un toast
+        }
+      });
+    });
+  }).catch(() => {});
+}
+</script>
+
+<!-- BANNER DE INSTALACIÓN MOBILE -->
+<div id="install-banner" style="
+  display:none; opacity:0; transition: opacity 0.3s;
+  position:fixed; bottom:80px; left:12px; right:12px; z-index:300;
+  background:var(--accent); color:white; border-radius:16px;
+  padding:16px 18px; align-items:center; gap:14px;
+  box-shadow:0 8px 32px rgba(139,94,60,0.35);
+">
+  <span style="font-size:28px">📚</span>
+  <div style="flex:1">
+    <div style="font-weight:600;font-size:14px;margin-bottom:2px">Instalá Mi Biblioteca</div>
+    <div style="font-size:12px;opacity:0.85">Accedé rápido desde tu pantalla de inicio</div>
+  </div>
+  <button onclick="installApp()" style="
+    background:white;color:var(--accent);border:none;border-radius:10px;
+    padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;
+    font-family:inherit;white-space:nowrap;
+  ">Instalar</button>
+  <button onclick="hideInstallBanner()" style="
+    background:transparent;border:none;color:white;font-size:20px;
+    cursor:pointer;padding:0 4px;line-height:1;opacity:0.7;
+  ">×</button>
+</div>
+
+</body>
+</html>
